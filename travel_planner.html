@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Travel Planner</title>
+    <meta name="description" content="AI-powered multi-agent travel planner with real-time streaming.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-primary: #0c0c0c;
+            --bg-surface: #18181b;
+            --bg-surface-hover: #1e1e22;
+            --bg-thinking: #1a1a1f;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-thinking: rgba(255, 255, 255, 0.10);
+            --text-primary: #ececf1;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --accent: #a78bfa;
+            --accent-dim: rgba(167, 139, 250, 0.12);
+            --emerald: #34d399;
+            --emerald-dim: rgba(52, 211, 153, 0.10);
+            --amber: #fbbf24;
+            --rose: #fb7185;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* ─── Layout ───────────────────────────── */
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 48px 20px 100px;
+        }
+
+        /* ─── Header ───────────────────────────── */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 5px 14px;
+            border-radius: 100px;
+            background: var(--accent-dim);
+            border: 1px solid rgba(167, 139, 250, 0.18);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--accent);
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            margin-bottom: 18px;
+        }
+
+        .header-badge .dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--emerald);
+            box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -0.8px;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* ─── Input Area ───────────────────────── */
+        .input-area {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 28px;
+            transition: border-color 0.2s;
+        }
+
+        .input-area:focus-within {
+            border-color: rgba(167, 139, 250, 0.3);
+        }
+
+        #trip-input {
+            width: 100%;
+            min-height: 80px;
+            padding: 0;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 15px;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+        }
+
+        #trip-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .input-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+        }
+
+        .presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .preset-chip {
+            padding: 5px 12px;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .preset-chip:hover {
+            border-color: rgba(167, 139, 250, 0.3);
+            color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        .btn-plan {
+            padding: 8px 20px;
+            background: var(--accent);
+            border: none;
+            border-radius: 10px;
+            color: #0c0c0c;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.15s, transform 0.1s;
+            flex-shrink: 0;
+        }
+
+        .btn-plan:hover:not(:disabled) {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-plan:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-plan:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* ─── Thinking Block (Claude-style) ───── */
+        .thinking-block {
+            margin-bottom: 12px;
+            border-radius: 12px;
+            overflow: hidden;
+            animation: block-in 0.35s ease;
+        }
+
+        @keyframes block-in {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── Collapsed header (toggle) ── */
+        .thinking-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-thinking);
+            border: 1px solid var(--border-thinking);
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: inherit;
+            text-align: left;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .thinking-toggle:hover {
+            background: var(--bg-surface-hover);
+        }
+
+        /* When block is expanded, square off bottom corners */
+        .thinking-block.expanded .thinking-toggle {
+            border-radius: 12px 12px 0 0;
+            border-bottom-color: transparent;
+        }
+
+        .toggle-icon {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toggle-chevron {
+            width: 14px;
+            height: 14px;
+            stroke: var(--text-muted);
+            transition: transform 0.2s;
+        }
+
+        .thinking-block.expanded .toggle-chevron {
+            transform: rotate(90deg);
+        }
+
+        .toggle-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            flex: 1;
+        }
+
+        .toggle-status {
+            font-size: 11px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .toggle-status.working {
+            color: var(--amber);
+        }
+
+        .toggle-status.done {
+            color: var(--emerald);
+        }
+
+        /* ── Shimmer bar while thinking ── */
+        .shimmer-bar {
+            height: 2px;
+            background: linear-gradient(90deg,
+                    transparent 0%,
+                    var(--accent) 50%,
+                    transparent 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.8s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        .thinking-block.done .shimmer-bar {
+            display: none;
+        }
+
+        /* ── Expandable content body ── */
+        .thinking-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            background: var(--bg-thinking);
+            border: 1px solid var(--border-thinking);
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+        }
+
+        .thinking-block.expanded .thinking-body {
+            max-height: 2000px;
+        }
+
+        .thinking-content {
+            padding: 14px 16px;
+            font-size: 13px;
+            line-height: 1.7;
+            color: var(--text-muted);
+        }
+
+        .thinking-content .step-text {
+            font-style: italic;
+        }
+
+        /* ── Active thinking state (block is expanded & pulsing) ── */
+        .thinking-block.active {
+            /* auto-expanded while thinking */
+        }
+
+        .thinking-block.active .thinking-toggle {
+            border-color: rgba(251, 191, 36, 0.15);
+        }
+
+        .thinking-block.active .toggle-label {
+            color: var(--text-primary);
+        }
+
+        /* Pulse dots */
+        .thinking-dots {
+            display: inline-flex;
+            gap: 3px;
+            margin-left: 2px;
+        }
+
+        .thinking-dots span {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--amber);
+            animation: dot-pulse 1.4s ease-in-out infinite;
+        }
+
+        .thinking-dots span:nth-child(2) {
+            animation-delay: 0.15s;
+        }
+
+        .thinking-dots span:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        @keyframes dot-pulse {
+
+            0%,
+            60%,
+            100% {
+                opacity: 0.3;
+                transform: scale(1);
+            }
+
+            30% {
+                opacity: 1;
+                transform: scale(1.3);
+            }
+        }
+
+        /* ── Done state ── */
+        .thinking-block.done .thinking-toggle {
+            border-color: rgba(52, 211, 153, 0.12);
+        }
+
+        .thinking-block.done .toggle-label {
+            color: var(--text-secondary);
+        }
+
+        /* ─── Summary / Final Output ───────────── */
+        .summary-block {
+            margin-top: 24px;
+            opacity: 0;
+            transform: translateY(10px);
+            animation: summary-in 0.5s ease 0.2s forwards;
+        }
+
+        @keyframes summary-in {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .summary-content {
+            font-size: 15px;
+            line-height: 1.8;
+            color: var(--text-secondary);
+        }
+
+        .summary-content h3 {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 24px 0 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .summary-content h3:first-child {
+            margin-top: 0;
+        }
+
+        .summary-content h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 16px 0 4px;
+        }
+
+        .summary-content p {
+            margin: 6px 0;
+        }
+
+        .summary-content strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .summary-content ul {
+            margin: 6px 0;
+            padding-left: 18px;
+        }
+
+        .summary-content li {
+            margin: 3px 0;
+        }
+
+        .summary-content li::marker {
+            color: var(--accent);
+        }
+
+        /* ─── Thinking Indicator (standalone) ──── */
+        .thinking-indicator {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            border-radius: 12px;
+            background: var(--bg-thinking);
+            border: 1px solid var(--border-thinking);
+            animation: block-in 0.3s ease;
+        }
+
+        .thinking-indicator.visible {
+            display: flex;
+        }
+
+        .thinking-orb {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: orb-pulse 1.6s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes orb-pulse {
+
+            0%,
+            100% {
+                opacity: 0.4;
+                transform: scale(0.85);
+                box-shadow: 0 0 0 0 rgba(167, 139, 250, 0.4);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.1);
+                box-shadow: 0 0 12px 2px rgba(167, 139, 250, 0.25);
+            }
+        }
+
+        .thinking-indicator-text {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .thinking-indicator-text span {
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .thinking-indicator-shimmer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 1.8s ease-in-out infinite;
+            border-radius: 0 0 12px 12px;
+        }
+
+        /* ─── Pipeline Wrapper ─────────────────── */
+        .pipeline {
+            display: none;
+        }
+
+        .pipeline.active {
+            display: block;
+        }
+
+        /* ─── Thread Info ──────────────────────── */
+        .thread-info {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            margin-top: 16px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .thread-info.visible {
+            display: flex;
+        }
+
+        .thread-info code {
+            font-family: monospace;
+            font-size: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 2px 7px;
+            border-radius: 4px;
+            color: var(--text-secondary);
+        }
+
+        /* ─── Responsive ───────────────────────── */
+        @media (max-width: 640px) {
+            .container {
+                padding: 28px 14px 60px;
+            }
+
+            .header h1 {
+                font-size: 26px;
+            }
+
+            .input-footer {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+
+            .btn-plan {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <!-- Header -->
+        <header class="header">
+            <div class="header-badge">
+                <span class="dot"></span>
+                Multi-Agent System
+            </div>
+            <h1>AI Travel Planner</h1>
+            <p>Specialised AI agents research, find flights, book hotels, and plan your budget in real time.</p>
+        </header>
+
+        <!-- Input Area -->
+        <section class="input-area" id="input-area">
+            <textarea id="trip-input"
+                placeholder="Describe your trip — e.g. Plan a 7-day trip from New York to Paris in mid-April with a mid-range budget…"></textarea>
+            <div class="input-footer">
+                <div class="presets">
+                    <button class="preset-chip" onclick="fillPreset('budget-tokyo')">Budget Tokyo</button>
+                    <button class="preset-chip" onclick="fillPreset('luxury-paris')">Luxury Paris</button>
+                    <button class="preset-chip" onclick="fillPreset('family-nyc')">Family NYC</button>
+                </div>
+                <button class="btn-plan" id="btn-plan" onclick="planTrip()">
+                    Plan Trip
+                </button>
+            </div>
+        </section>
+
+        <!-- Thinking Indicator -->
+        <div class="thinking-indicator" id="thinking-indicator" style="position:relative;">
+            <div class="thinking-orb"></div>
+            <div class="thinking-indicator-text">
+                Agents are thinking<span> — planning your trip...</span>
+            </div>
+            <div class="thinking-indicator-shimmer"></div>
+        </div>
+
+        <!-- Agent Pipeline (thinking blocks) -->
+        <section class="pipeline" id="pipeline"></section>
+
+        <!-- Thread Info -->
+        <div class="thread-info" id="thread-info">
+            Thread: <code id="thread-id-display">—</code>
+        </div>
+
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+
+        const AGENT_META = {
+            research: {
+                label: 'Research Agent',
+                thinkingMsg: 'Searching destination info and weather data',
+                doneMsg: 'Gathered destination research and weather',
+            },
+            flights: {
+                label: 'Flights Agent',
+                thinkingMsg: 'Searching for the best available flights',
+                doneMsg: 'Found best flight options and baggage policies',
+            },
+            hotels: {
+                label: 'Hotels Agent',
+                thinkingMsg: 'Looking for hotels and checking amenities',
+                doneMsg: 'Selected top hotel picks with amenities',
+            },
+            budget: {
+                label: 'Budget Agent',
+                thinkingMsg: 'Calculating costs and converting currencies',
+                doneMsg: 'Prepared full cost breakdown and conversions',
+            },
+            summarize: {
+                label: 'Summary',
+                thinkingMsg: 'Compiling your final travel plan',
+                doneMsg: 'Travel plan ready',
+            },
+        };
+
+        const PRESETS = {
+            'budget-tokyo': 'I want to plan a 5-day budget trip from London to Tokyo in October. Find cheap flights, an affordable hotel near Shinjuku, and estimate daily costs in JPY.',
+            'luxury-paris': 'Plan a luxury 7-day getaway from Dubai to Paris in June. I want first-class flights, a 5-star hotel near the Eiffel Tower, and a full budget breakdown in EUR.',
+            'family-nyc': 'We\'re a family of 4 planning a 6-day trip from Chicago to New York City in December. Find family-friendly flights, a hotel near Central Park, and estimate total costs.',
+        };
+
+        const inputEl = document.getElementById('trip-input');
+        const btnPlan = document.getElementById('btn-plan');
+        const pipelineEl = document.getElementById('pipeline');
+        const threadInfoEl = document.getElementById('thread-info');
+        const threadIdEl = document.getElementById('thread-id-display');
+        const thinkingIndEl = document.getElementById('thinking-indicator');
+
+        function fillPreset(key) {
+            inputEl.value = PRESETS[key] || '';
+            inputEl.focus();
+        }
+
+        // ── Build a thinking block ──────────────────
+        function createThinkingBlock(nodeName) {
+            const meta = AGENT_META[nodeName] || { label: nodeName, thinkingMsg: 'Working', doneMsg: 'Done' };
+
+            const block = document.createElement('div');
+            block.className = 'thinking-block active expanded';
+            block.id = `block-${nodeName}`;
+            block.innerHTML = `
+            <button class="thinking-toggle" onclick="toggleBlock('${nodeName}')">
+                <div class="toggle-icon">
+                    <svg class="toggle-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                </div>
+                <span class="toggle-label" id="label-${nodeName}">${meta.label}</span>
+                <span class="toggle-status working" id="status-${nodeName}">
+                    <span class="thinking-dots"><span></span><span></span><span></span></span>
+                </span>
+            </button>
+            <div class="shimmer-bar" id="shimmer-${nodeName}"></div>
+            <div class="thinking-body">
+                <div class="thinking-content" id="content-${nodeName}">
+                    <span class="step-text">${meta.thinkingMsg}…</span>
+                </div>
+            </div>
+        `;
+            return block;
+        }
+
+        // ── Complete a thinking block ────────────────
+        function completeBlock(nodeName, fullContent) {
+            const meta = AGENT_META[nodeName] || { doneMsg: 'Done' };
+            const block = document.getElementById(`block-${nodeName}`);
+            if (!block) return;
+
+            // Switch state
+            block.classList.remove('active');
+            block.classList.add('done');
+
+            // Collapse (except summary)
+            if (nodeName !== 'summarize') {
+                block.classList.remove('expanded');
+            }
+
+            // Update status badge
+            const statusEl = document.getElementById(`status-${nodeName}`);
+            if (statusEl) {
+                statusEl.className = 'toggle-status done';
+                statusEl.innerHTML = `
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            `;
+            }
+
+            // Update label to include done message
+            const labelEl = document.getElementById(`label-${nodeName}`);
+            if (labelEl) {
+                if (nodeName === 'summarize') {
+                    labelEl.textContent = meta.label;
+                } else {
+                    labelEl.innerHTML = `${meta.label} <span style="color:var(--text-muted); font-weight:400; margin-left:6px;">— ${meta.doneMsg}</span>`;
+                }
+            }
+
+            // Update body content
+            const contentEl = document.getElementById(`content-${nodeName}`);
+            if (!contentEl) return;
+
+            if (nodeName === 'summarize') {
+                // Summary shows full formatted output below the block
+                const summaryDiv = document.createElement('div');
+                summaryDiv.className = 'summary-block';
+                summaryDiv.innerHTML = `<div class="summary-content">${formatContent(fullContent)}</div>`;
+                block.parentNode.insertBefore(summaryDiv, block.nextSibling);
+                // Also put short text inside the collapsible body
+                contentEl.innerHTML = '<span class="step-text">Compiled the final travel plan from all agents.</span>';
+            } else {
+                contentEl.innerHTML = `<span class="step-text">${meta.doneMsg}.</span>`;
+            }
+        }
+
+        // ── Toggle collapse/expand ──────────────────
+        function toggleBlock(nodeName) {
+            const block = document.getElementById(`block-${nodeName}`);
+            if (block) block.classList.toggle('expanded');
+        }
+
+        // ── Format content (markdown → HTML) ────────
+        function formatContent(raw) {
+            if (!raw) return '<p>No content received.</p>';
+
+            let text = escapeHtml(raw);
+
+            text = text.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
+            text = text.replace(/^###\s+(.+)$/gm, '<h4>$1</h4>');
+            text = text.replace(/^##\s+(.+)$/gm, '<h3>$1</h3>');
+
+            text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+            text = text.replace(/^- (.+)$/gm, '<li>$1</li>');
+            text = text.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
+
+            text = text
+                .split(/\n{2,}/)
+                .map(block => {
+                    block = block.trim();
+                    if (!block) return '';
+                    if (/^<(h[2-4]|ul|ol|li)/.test(block)) return block;
+                    return `<p>${block.replace(/\n/g, '<br>')}</p>`;
+                })
+                .join('');
+
+            return text;
+        }
+
+        function escapeHtml(text) {
+            const d = document.createElement('div');
+            d.textContent = text;
+            return d.innerHTML;
+        }
+
+        // ── Main: Plan Trip ─────────────────────────
+        async function planTrip() {
+            const message = inputEl.value.trim();
+            if (!message) { inputEl.focus(); return; }
+
+            // Reset
+            pipelineEl.innerHTML = '';
+            pipelineEl.classList.add('active');
+            threadInfoEl.classList.remove('visible');
+            thinkingIndEl.classList.add('visible');
+
+            const createdBlocks = new Set();
+
+            try {
+                const response = await fetch(`${API_BASE}/plan/stream`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message }),
+                });
+
+                if (!response.ok) throw new Error(`Server error ${response.status}`);
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        const jsonStr = line.slice(6).trim();
+                        if (!jsonStr) continue;
+                        try {
+                            handleEvent(JSON.parse(jsonStr), createdBlocks);
+                        } catch { }
+                    }
+                }
+
+                if (buffer.startsWith('data: ')) {
+                    try { handleEvent(JSON.parse(buffer.slice(6).trim()), createdBlocks); } catch { }
+                }
+
+            } catch (err) {
+                const errDiv = document.createElement('div');
+                errDiv.className = 'thinking-block';
+                errDiv.innerHTML = `
+                <div class="thinking-toggle" style="border-color:rgba(251,113,133,0.2); cursor:default;">
+                    <div class="toggle-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--rose)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                    </div>
+                    <span class="toggle-label" style="color:var(--rose);">Error — ${escapeHtml(err.message)}</span>
+                </div>
+            `;
+                pipelineEl.appendChild(errDiv);
+            } finally {
+                thinkingIndEl.classList.remove('visible');
+            }
+        }
+
+        // ── Handle SSE event ────────────────────────
+        function handleEvent(event, createdBlocks) {
+            switch (event.event) {
+                case 'start':
+                    threadIdEl.textContent = event.thread_id;
+                    threadInfoEl.classList.add('visible');
+                    break;
+
+                case 'node_complete': {
+                    const node = event.node;
+                    if (!createdBlocks.has(node)) {
+                        pipelineEl.appendChild(createThinkingBlock(node));
+                        // Keep indicator at the bottom, below all blocks
+                        pipelineEl.appendChild(thinkingIndEl);
+                        createdBlocks.add(node);
+                    }
+                    setTimeout(() => {
+                        completeBlock(node, event.content || '');
+                    }, 500);
+                    break;
+                }
+
+                case 'done':
+                    thinkingIndEl.classList.remove('visible');
+                    break;
+
+                case 'error':
+                    break;
+            }
+        }
+
+        // ── Ctrl+Enter shortcut ─────────────────────
+        inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                planTrip();
+            }
+        });
+
+        // ── Auto resize textarea ────────────────────
+        inputEl.addEventListener('input', () => {
+            inputEl.style.height = 'auto';
+            inputEl.style.height = inputEl.scrollHeight + 'px';
+        });
+    </script>
+
+</body>
+
+</html>
