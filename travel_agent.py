@@ -4,8 +4,8 @@ load_dotenv()
 from langchain.agents import create_agent
 from langchain.tools import tool
 from langgraph.graph import StateGraph, START, END
+from langgraph.types import interrupt
 from langgraph.graph.message import add_messages
-from langgraph.checkpoint.memory import MemorySaver
 from typing import TypedDict, Annotated, Literal
 
 
@@ -115,6 +115,26 @@ budget_agent = create_agent(
     ),
 )
 
+# Intake agent — validates that the user provided enough info
+intake_agent = create_agent(
+    model="gpt-4o",
+    tools=[],
+    system_prompt=(
+        "You are a travel planning intake specialist. "
+        "Analyze the user's travel request and determine if they have provided "
+        "enough information for a travel planning team to work with.\n\n"
+        "The team needs at minimum:\n"
+        "1. Destination (where they want to go)\n"
+        "2. Origin (where they're traveling from)\n"
+        "3. Approximate travel dates or time frame\n"
+        "4. Budget preference or travel style (budget, mid-range, luxury)\n\n"
+        "If the request contains ALL of these details (even approximately), "
+        "respond with ONLY the single word: READY\n\n"
+        "If ANY key details are missing, respond with a friendly, concise message "
+        "asking for the specific missing information. Do NOT plan the trip yourself."
+    ),
+)
+
 
 # ─────────────────────────────────────────
 # 3. Define Graph State
@@ -134,6 +154,30 @@ class TripState(TypedDict):
 #    the result in the state
 # ─────────────────────────────────────────
 
+def intake(state: TripState):
+    """Validate the user's request has enough info before dispatching agents."""
+    result = intake_agent.invoke({"messages": state["messages"]})
+    answer = result["messages"][-1].content
+
+    # If all info is present, pass through
+    if answer.strip().upper() == "READY":
+        return {}
+
+    # Missing info — interrupt and ask the user
+    user_response = interrupt({
+        "question": answer,
+        "node": "intake",
+    })
+
+    # Add the Q&A to messages so all downstream agents have full context
+    return {
+        "messages": [
+            {"role": "assistant", "content": f"[Intake]: {answer}"},
+            {"role": "user", "content": user_response},
+        ]
+    }
+
+
 def run_research(state: TripState):
     result = research_agent.invoke({"messages": state["messages"]})
     answer = result["messages"][-1].content
@@ -150,9 +194,39 @@ def run_flights(state: TripState):
         "messages": [{"role": "assistant", "content": f"[Flights Agent]: {answer}"}]
     }
 
+def needs_user_input(text: str) -> bool:
+    """Check if the hotels agent is asking the user for specific dates."""
+    text_lower = text.lower()
+    has_question = "?" in text
+    date_keywords = [
+        "check-in", "check-out", "checkin", "checkout",
+        "dates", "when", "arrival", "departure",
+        "specific date", "exact date", "travel date",
+    ]
+    has_date_ref = any(kw in text_lower for kw in date_keywords)
+    asking_patterns = ["could you", "can you", "please provide", "would you", "i need", "what are"]
+    has_asking = any(p in text_lower for p in asking_patterns)
+    return has_question and (has_date_ref or has_asking)
+
+
 def run_hotels(state: TripState):
     result = hotels_agent.invoke({"messages": state["messages"]})
     answer = result["messages"][-1].content
+
+    # If the agent is asking for specific dates, interrupt for user input
+    if needs_user_input(answer):
+        user_input = interrupt({
+            "question": answer,
+            "node": "hotels",
+        })
+        # Re-invoke the agent with the user's date response
+        updated_messages = state["messages"] + [
+            {"role": "assistant", "content": answer},
+            {"role": "user", "content": user_input},
+        ]
+        result = hotels_agent.invoke({"messages": updated_messages})
+        answer = result["messages"][-1].content
+
     return {
         "hotels_result": answer,
         "messages": [{"role": "assistant", "content": f"[Hotels Agent]: {answer}"}]
@@ -197,7 +271,7 @@ def summarize(state: TripState):
 # ─────────────────────────────────────────
 
 def build_graph():
-    """Build and compile the travel agent graph."""
+    """Build the travel agent graph (uncompiled)."""
     graph = StateGraph(TripState)
 
     # Add all nodes
@@ -208,10 +282,14 @@ def build_graph():
     graph.add_node("summarize", summarize)
 
     # Wire up the flow:
-    # research + flights + hotels run in parallel, then budget, then summarize
-    graph.add_edge(START, "research")
-    graph.add_edge(START, "flights")
-    graph.add_edge(START, "hotels")
+    # START → intake → research + flights + hotels (parallel) → budget → summarize
+    graph.add_node("intake", intake)
+    graph.add_edge(START, "intake")
+
+    # Intake fans out to the three parallel agents
+    graph.add_edge("intake", "research")
+    graph.add_edge("intake", "flights")
+    graph.add_edge("intake", "hotels")
 
     # All three feed into budget
     graph.add_edge("research", "budget")
@@ -222,11 +300,12 @@ def build_graph():
     graph.add_edge("budget", "summarize")
     graph.add_edge("summarize", END)
 
-    return graph.compile(checkpointer=MemorySaver())
+    return graph
 
 
-# Compile the graph — importable by api.py
-app = build_graph()
+# Compiled without checkpointer — compatible with langgraph dev (platform provides its own)
+# For standalone uvicorn usage, api.py compiles with MemorySaver
+app = build_graph().compile()
 
 
 # ─────────────────────────────────────────
@@ -234,6 +313,9 @@ app = build_graph()
 # ─────────────────────────────────────────
 
 if __name__ == "__main__":
+    from langgraph.checkpoint.memory import MemorySaver
+    app = build_graph().compile(checkpointer=MemorySaver())
+
     # Visualize the graph
     try:
         with open("graph.png", "wb") as f:

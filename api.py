@@ -20,9 +20,15 @@ from typing import Optional
 import uuid
 import json
 import os
+import asyncio
 
-# Import the compiled graph from travel_agent.py
-from travel_agent import app as travel_app
+from langgraph.types import Command
+from langgraph.checkpoint.memory import MemorySaver
+
+# Import the graph builder and compile with checkpointer (needed for interrupt/HITL)
+from travel_agent import build_graph
+
+travel_app = build_graph().compile(checkpointer=MemorySaver())
 
 
 # ─────────────────────────────────────────
@@ -65,6 +71,12 @@ class TripRequest(BaseModel):
     )
 
 
+class ResumeRequest(BaseModel):
+    """Request body for resuming after an interrupt."""
+    thread_id: str = Field(..., description="Thread ID of the interrupted session.")
+    user_response: str = Field(..., description="User's response to the agent's question.")
+
+
 class TripResponse(BaseModel):
     """Response body for a planned trip."""
     thread_id: str
@@ -76,8 +88,87 @@ class TripResponse(BaseModel):
 
 
 # ─────────────────────────────────────────
+# Helpers for streaming
+# ─────────────────────────────────────────
+
+def build_node_payload(node_name: str, node_output) -> dict:
+    """Build an SSE payload dict from a node's stream output."""
+    # Ensure node_output is a dict
+    if not isinstance(node_output, dict):
+        return {
+            "event": "node_complete",
+            "node": node_name,
+            "content": str(node_output),
+        }
+
+    messages = node_output.get("messages", [])
+    content = ""
+    if messages:
+        msg = messages[-1]
+        if hasattr(msg, "content"):
+            content = msg.content
+        elif isinstance(msg, dict) and "content" in msg:
+            content = msg["content"]
+        else:
+            content = str(msg)
+
+    payload = {
+        "event": "node_complete",
+        "node": node_name,
+        "content": content,
+    }
+
+    for key in ["research_result", "flights_result", "hotels_result", "budget_result"]:
+        if key in node_output:
+            payload[key] = node_output[key]
+
+    return payload
+
+
+def _extract_interrupt(state) -> dict:
+    """Extract the interrupt value from the graph state."""
+    for task in state.tasks:
+        if hasattr(task, "interrupts") and task.interrupts:
+            val = task.interrupts[0].value
+            if isinstance(val, dict):
+                return val
+            return {"question": str(val), "node": "intake"}
+    return {"question": "Please provide additional information.", "node": "intake"}
+
+
+def _parse_stream_events(events: list) -> list:
+    """Normalize stream events into [(node_name, node_output), ...] pairs.
+
+    LangGraph stream(mode='updates') may yield dicts {node: output}
+    or tuples (node, output) depending on the version.
+    """
+    parsed = []
+    for i, event in enumerate(events):
+        if isinstance(event, dict):
+            for node_name, node_output in event.items():
+                # Skip internal __interrupt__ pseudo-node — handled separately
+                if node_name == "__interrupt__":
+                    continue
+                parsed.append((node_name, node_output))
+        elif isinstance(event, (tuple, list)) and len(event) == 2:
+            if event[0] == "__interrupt__":
+                continue
+            parsed.append((event[0], event[1]))
+        else:
+            continue
+    return parsed
+
+
+# ─────────────────────────────────────────
 # Endpoints
 # ─────────────────────────────────────────
+
+@api.get("/travel_planner.html", response_class=HTMLResponse)
+async def serve_frontend():
+    """Serve the travel planner frontend."""
+    html_path = os.path.join(os.path.dirname(__file__), "travel_planner.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return f.read()
 
 @api.get("/", response_class=HTMLResponse)
 async def root():
@@ -207,44 +298,75 @@ async def plan_trip_stream(request: TripRequest):
             # Send thread_id first
             yield f"data: {json.dumps({'event': 'start', 'thread_id': thread_id})}\n\n"
 
-            for event in travel_app.stream(
-                {
-                    "messages": [{"role": "user", "content": request.message}],
-                    "research_result": "",
-                    "flights_result": "",
-                    "hotels_result": "",
-                    "budget_result": "",
-                },
-                config=config,
-                stream_mode="updates",
-            ):
-                for node_name, node_output in event.items():
-                    # Extract message content
-                    messages = node_output.get("messages", [])
-                    content = ""
-                    if messages:
-                        msg = messages[-1]
-                        if hasattr(msg, "content"):
-                            content = msg.content
-                        elif isinstance(msg, dict) and "content" in msg:
-                            content = msg["content"]
-                        else:
-                            content = str(msg)
+            # Collect all stream events fully (avoids GeneratorExit on interrupt)
+            events = await asyncio.to_thread(
+                lambda: list(travel_app.stream(
+                    {
+                        "messages": [{"role": "user", "content": request.message}],
+                        "research_result": "",
+                        "flights_result": "",
+                        "hotels_result": "",
+                        "budget_result": "",
+                    },
+                    config=config,
+                    stream_mode="updates",
+                ))
+            )
 
-                    payload = {
-                        "event": "node_complete",
-                        "node": node_name,
-                        "content": content,
-                    }
+            for node_name, node_output in _parse_stream_events(events):
+                yield f"data: {json.dumps(build_node_payload(node_name, node_output))}\n\n"
 
-                    # Include agent-specific results if present
-                    for key in ["research_result", "flights_result", "hotels_result", "budget_result"]:
-                        if key in node_output:
-                            payload[key] = node_output[key]
+            # Check if the graph is interrupted (human-in-the-loop)
+            state = await asyncio.to_thread(travel_app.get_state, config)
+            if state.next:
+                interrupt_value = _extract_interrupt(state)
+                yield f"data: {json.dumps({'event': 'interrupt', 'question': interrupt_value.get('question', ''), 'node': interrupt_value.get('node', 'intake')})}\n\n"
+            else:
+                yield f"data: {json.dumps({'event': 'done'})}\n\n"
 
-                    yield f"data: {json.dumps(payload)}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'event': 'error', 'detail': str(e)})}\n\n"
 
-            yield f"data: {json.dumps({'event': 'done'})}\n\n"
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
+    )
+
+
+@api.post("/plan/resume")
+async def resume_plan(request: ResumeRequest):
+    """
+    Resume a trip planning session after a human-in-the-loop interrupt.
+
+    The graph was paused because an agent (e.g. Hotels) asked a question.
+    Send the user's response here to continue the pipeline.
+    """
+    config = {"configurable": {"thread_id": request.thread_id}}
+
+    async def event_generator():
+        try:
+            yield f"data: {json.dumps({'event': 'resumed', 'thread_id': request.thread_id})}\n\n"
+
+            # Collect all stream events fully (avoids GeneratorExit on interrupt)
+            events = await asyncio.to_thread(
+                lambda: list(travel_app.stream(
+                    Command(resume=request.user_response),
+                    config=config,
+                    stream_mode="updates",
+                ))
+            )
+
+            for node_name, node_output in _parse_stream_events(events):
+                yield f"data: {json.dumps(build_node_payload(node_name, node_output))}\n\n"
+
+            # Check for yet another interrupt
+            state = await asyncio.to_thread(travel_app.get_state, config)
+            if state.next:
+                interrupt_value = _extract_interrupt(state)
+                yield f"data: {json.dumps({'event': 'interrupt', 'question': interrupt_value.get('question', ''), 'node': interrupt_value.get('node', 'intake')})}\n\n"
+            else:
+                yield f"data: {json.dumps({'event': 'done'})}\n\n"
 
         except Exception as e:
             yield f"data: {json.dumps({'event': 'error', 'detail': str(e)})}\n\n"

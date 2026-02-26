@@ -5,7 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Travel Planner</title>
-    <meta name="description" content="AI-powered multi-agent travel planner with real-time streaming.">
+    <meta name="description"
+        content="AI-powered multi-agent travel planner — conversational interface with real-time streaming.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
@@ -23,6 +24,8 @@
             --bg-surface: #18181b;
             --bg-surface-hover: #1e1e22;
             --bg-thinking: #1a1a1f;
+            --bg-user-msg: #2a2a32;
+            --bg-ai-msg: transparent;
             --border: rgba(255, 255, 255, 0.08);
             --border-thinking: rgba(255, 255, 255, 0.10);
             --text-primary: #ececf1;
@@ -34,45 +37,173 @@
             --emerald-dim: rgba(52, 211, 153, 0.10);
             --amber: #fbbf24;
             --rose: #fb7185;
+            --sidebar-width: 260px;
+        }
+
+        html,
+        body {
+            height: 100%;
         }
 
         body {
             font-family: 'Inter', system-ui, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
-            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
         }
 
-        /* ─── Layout ───────────────────────────── */
-        .container {
-            max-width: 760px;
-            margin: 0 auto;
-            padding: 48px 20px 100px;
+        /* ─── Sidebar ────────────────────────────── */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: #111113;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            height: 100vh;
+            transition: transform 0.3s ease;
         }
 
-        /* ─── Header ───────────────────────────── */
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
+        .sidebar-header {
+            padding: 18px 16px 14px;
+            border-bottom: 1px solid var(--border);
         }
 
-        .header-badge {
-            display: inline-flex;
+        .sidebar-brand {
+            display: flex;
             align-items: center;
-            gap: 7px;
-            padding: 5px 14px;
-            border-radius: 100px;
-            background: var(--accent-dim);
-            border: 1px solid rgba(167, 139, 250, 0.18);
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--accent);
-            letter-spacing: 0.6px;
-            text-transform: uppercase;
-            margin-bottom: 18px;
+            gap: 10px;
+            margin-bottom: 16px;
         }
 
-        .header-badge .dot {
+        .brand-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .brand-icon svg {
+            width: 18px;
+            height: 18px;
+            stroke: white;
+            fill: none;
+        }
+
+        .brand-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
+        }
+
+        .brand-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .btn-new-chat {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-surface);
+            border: 1px dashed rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.15s;
+        }
+
+        .btn-new-chat:hover {
+            background: var(--bg-surface-hover);
+            border-color: rgba(167, 139, 250, 0.3);
+            color: var(--accent);
+        }
+
+        .btn-new-chat svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+        .sidebar-chats {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .sidebar-chats::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar-chats::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+        }
+
+        .chat-history-item {
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.12s;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-history-item:hover {
+            background: var(--bg-surface);
+            color: var(--text-primary);
+        }
+
+        .chat-history-item.active {
+            background: var(--accent-dim);
+            color: var(--accent);
+        }
+
+        .chat-history-item svg {
+            width: 15px;
+            height: 15px;
+            stroke: currentColor;
+            fill: none;
+            flex-shrink: 0;
+            opacity: 0.6;
+        }
+
+        .chat-item-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-footer {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+            font-size: 11px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .sidebar-footer .dot {
             width: 5px;
             height: 5px;
             border-radius: 50%;
@@ -80,116 +211,304 @@
             box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
         }
 
-        .header h1 {
-            font-size: 32px;
+        /* ─── Main Chat Area ─────────────────────── */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            min-width: 0;
+        }
+
+        /* ─── Top Bar ────────────────────────────── */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(12, 12, 12, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .topbar-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .topbar-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 100px;
+            background: var(--accent-dim);
+            border: 1px solid rgba(167, 139, 250, 0.15);
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--accent);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .topbar-thread {
+            font-size: 11px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .topbar-thread code {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 2px 7px;
+            border-radius: 4px;
+            color: var(--text-secondary);
+        }
+
+        .btn-sidebar-toggle {
+            display: none;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 8px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.15s;
+        }
+
+        .btn-sidebar-toggle:hover {
+            background: var(--bg-surface);
+            color: var(--text-primary);
+        }
+
+        .btn-sidebar-toggle svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+        /* ─── Chat Messages Area ─────────────────── */
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+            scroll-behavior: smooth;
+        }
+
+        .chat-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-area::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 4px;
+        }
+
+        /* ─── Welcome Screen ─────────────────────── */
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 40px 24px;
+            text-align: center;
+        }
+
+        .welcome-screen.hidden {
+            display: none;
+        }
+
+        .welcome-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 60%, #6d28d9 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(124, 58, 237, 0.25);
+        }
+
+        .welcome-icon svg {
+            width: 32px;
+            height: 32px;
+            stroke: white;
+            fill: none;
+        }
+
+        .welcome-screen h1 {
+            font-size: 28px;
             font-weight: 800;
-            letter-spacing: -0.8px;
+            letter-spacing: -0.5px;
             color: var(--text-primary);
             margin-bottom: 8px;
         }
 
-        .header p {
+        .welcome-screen p {
             font-size: 15px;
             color: var(--text-muted);
+            max-width: 480px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .welcome-presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            max-width: 560px;
+        }
+
+        .welcome-preset {
+            padding: 12px 18px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: left;
+            max-width: 260px;
             line-height: 1.5;
         }
 
-        /* ─── Input Area ───────────────────────── */
-        .input-area {
-            background: var(--bg-surface);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 28px;
-            transition: border-color 0.2s;
-        }
-
-        .input-area:focus-within {
+        .welcome-preset:hover {
             border-color: rgba(167, 139, 250, 0.3);
-        }
-
-        #trip-input {
-            width: 100%;
-            min-height: 80px;
-            padding: 0;
-            background: transparent;
-            border: none;
+            background: var(--bg-surface-hover);
             color: var(--text-primary);
-            font-family: inherit;
-            font-size: 15px;
-            line-height: 1.6;
-            resize: none;
-            outline: none;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
         }
 
-        #trip-input::placeholder {
+        .welcome-preset .preset-icon {
+            font-size: 18px;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .welcome-preset .preset-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 13px;
+            margin-bottom: 2px;
+        }
+
+        .welcome-preset .preset-desc {
+            font-size: 12px;
             color: var(--text-muted);
         }
 
-        .input-footer {
+        /* ─── Chat Messages Container ────────────── */
+        .messages-container {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 24px 24px 16px;
+            width: 100%;
+        }
+
+        /* ─── Single Message ─────────────────────── */
+        .message {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            animation: msg-in 0.35s ease;
+        }
+
+        @keyframes msg-in {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            flex-shrink: 0;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            margin-top: 14px;
-            padding-top: 14px;
-            border-top: 1px solid var(--border);
+            justify-content: center;
+            margin-top: 2px;
         }
 
-        .presets {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
+        .message-avatar.user {
+            background: linear-gradient(135deg, #34d399, #059669);
         }
 
-        .preset-chip {
-            padding: 5px 12px;
-            background: transparent;
-            border: 1px solid var(--border);
-            border-radius: 100px;
-            color: var(--text-muted);
-            font-family: inherit;
-            font-size: 11px;
-            cursor: pointer;
-            transition: all 0.15s;
+        .message-avatar.ai {
+            background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
         }
 
-        .preset-chip:hover {
-            border-color: rgba(167, 139, 250, 0.3);
-            color: var(--accent);
-            background: var(--accent-dim);
+        .message-avatar svg {
+            width: 16px;
+            height: 16px;
+            stroke: white;
+            fill: none;
         }
 
-        .btn-plan {
-            padding: 8px 20px;
-            background: var(--accent);
-            border: none;
-            border-radius: 10px;
-            color: #0c0c0c;
-            font-family: inherit;
+        .message-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .message-sender {
             font-size: 13px;
             font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.15s, transform 0.1s;
-            flex-shrink: 0;
+            margin-bottom: 6px;
+            color: var(--text-primary);
         }
 
-        .btn-plan:hover:not(:disabled) {
-            opacity: 0.9;
-            transform: translateY(-1px);
+        .message-sender .msg-time {
+            font-weight: 400;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-left: 8px;
         }
 
-        .btn-plan:active:not(:disabled) {
-            transform: translateY(0);
+        .message-text {
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--text-secondary);
         }
 
-        .btn-plan:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
+        .message-text p {
+            margin-bottom: 8px;
         }
 
-        /* ─── Thinking Block (Claude-style) ───── */
+        .message-text p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* ─── AI Response Container ──────────────── */
+        .ai-response-area {
+            margin-top: 4px;
+        }
+
+        /* ─── Thinking Blocks (Claude-style) ─────── */
         .thinking-block {
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             border-radius: 12px;
             overflow: hidden;
             animation: block-in 0.35s ease;
@@ -207,13 +526,12 @@
             }
         }
 
-        /* ── Collapsed header (toggle) ── */
         .thinking-toggle {
             display: flex;
             align-items: center;
             gap: 10px;
             width: 100%;
-            padding: 12px 16px;
+            padding: 10px 14px;
             background: var(--bg-thinking);
             border: 1px solid var(--border-thinking);
             border-radius: 12px;
@@ -227,7 +545,6 @@
             background: var(--bg-surface-hover);
         }
 
-        /* When block is expanded, square off bottom corners */
         .thinking-block.expanded .thinking-toggle {
             border-radius: 12px 12px 0 0;
             border-bottom-color: transparent;
@@ -276,13 +593,9 @@
             color: var(--emerald);
         }
 
-        /* ── Shimmer bar while thinking ── */
         .shimmer-bar {
             height: 2px;
-            background: linear-gradient(90deg,
-                    transparent 0%,
-                    var(--accent) 50%,
-                    transparent 100%);
+            background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%);
             background-size: 200% 100%;
             animation: shimmer 1.8s ease-in-out infinite;
         }
@@ -301,7 +614,6 @@
             display: none;
         }
 
-        /* ── Expandable content body ── */
         .thinking-body {
             max-height: 0;
             overflow: hidden;
@@ -317,7 +629,7 @@
         }
 
         .thinking-content {
-            padding: 14px 16px;
+            padding: 12px 14px;
             font-size: 13px;
             line-height: 1.7;
             color: var(--text-muted);
@@ -325,11 +637,6 @@
 
         .thinking-content .step-text {
             font-style: italic;
-        }
-
-        /* ── Active thinking state (block is expanded & pulsing) ── */
-        .thinking-block.active {
-            /* auto-expanded while thinking */
         }
 
         .thinking-block.active .thinking-toggle {
@@ -340,7 +647,6 @@
             color: var(--text-primary);
         }
 
-        /* Pulse dots */
         .thinking-dots {
             display: inline-flex;
             gap: 3px;
@@ -378,7 +684,6 @@
             }
         }
 
-        /* ── Done state ── */
         .thinking-block.done .thinking-toggle {
             border-color: rgba(52, 211, 153, 0.12);
         }
@@ -387,25 +692,12 @@
             color: var(--text-secondary);
         }
 
-        /* ─── Summary / Final Output ───────────── */
-        .summary-block {
-            margin-top: 24px;
-            opacity: 0;
-            transform: translateY(10px);
-            animation: summary-in 0.5s ease 0.2s forwards;
-        }
-
-        @keyframes summary-in {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
+        /* ─── Summary / Final Output ──────────────── */
         .summary-content {
             font-size: 15px;
             line-height: 1.8;
             color: var(--text-secondary);
+            margin-top: 16px;
         }
 
         .summary-content h3 {
@@ -450,17 +742,18 @@
             color: var(--accent);
         }
 
-        /* ─── Thinking Indicator (standalone) ──── */
+        /* ─── Thinking Indicator (inline) ─────────── */
         .thinking-indicator {
             display: none;
             align-items: center;
             gap: 12px;
-            padding: 14px 18px;
-            margin-bottom: 16px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
             border-radius: 12px;
             background: var(--bg-thinking);
             border: 1px solid var(--border-thinking);
             animation: block-in 0.3s ease;
+            position: relative;
         }
 
         .thinking-indicator.visible {
@@ -515,114 +808,450 @@
             border-radius: 0 0 12px 12px;
         }
 
-        /* ─── Pipeline Wrapper ─────────────────── */
-        .pipeline {
-            display: none;
+        /* ─── Input Bar (Bottom, sticky) ──────────── */
+        .input-bar-wrapper {
+            flex-shrink: 0;
+            padding: 0 24px 20px;
+            background: linear-gradient(to top, var(--bg-primary) 60%, transparent);
+            position: relative;
         }
 
-        .pipeline.active {
-            display: block;
+        .input-bar {
+            max-width: 780px;
+            margin: 0 auto;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 14px 16px;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
-        /* ─── Thread Info ──────────────────────── */
-        .thread-info {
-            display: none;
+        .input-bar:focus-within {
+            border-color: rgba(167, 139, 250, 0.3);
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.06);
+        }
+
+        .input-bar textarea {
+            width: 100%;
+            min-height: 24px;
+            max-height: 160px;
+            padding: 0;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 15px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+        }
+
+        .input-bar textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .input-bar-footer {
+            display: flex;
             align-items: center;
-            gap: 6px;
-            margin-top: 16px;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .input-hint {
             font-size: 11px;
             color: var(--text-muted);
         }
 
-        .thread-info.visible {
-            display: flex;
-        }
-
-        .thread-info code {
-            font-family: monospace;
-            font-size: 10px;
-            background: rgba(255, 255, 255, 0.04);
-            padding: 2px 7px;
+        .input-hint kbd {
+            display: inline-block;
+            padding: 1px 5px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 4px;
+            font-family: inherit;
+            font-size: 10px;
             color: var(--text-secondary);
         }
 
-        /* ─── Responsive ───────────────────────── */
-        @media (max-width: 640px) {
-            .container {
-                padding: 28px 14px 60px;
+        .btn-send {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: var(--accent);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.15s, transform 0.1s;
+            flex-shrink: 0;
+        }
+
+        .btn-send:hover:not(:disabled) {
+            opacity: 0.88;
+            transform: translateY(-1px);
+        }
+
+        .btn-send:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-send:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .btn-send svg {
+            width: 18px;
+            height: 18px;
+            stroke: #0c0c0c;
+            fill: none;
+        }
+
+        /* ─── Error Block ────────────────────────── */
+        .error-block {
+            padding: 12px 16px;
+            background: rgba(251, 113, 133, 0.06);
+            border: 1px solid rgba(251, 113, 133, 0.15);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: block-in 0.3s ease;
+        }
+
+        .error-block svg {
+            flex-shrink: 0;
+        }
+
+        .error-block span {
+            font-size: 13px;
+            color: var(--rose);
+        }
+
+        /* ─── Responsive ─────────────────────────── */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                z-index: 100;
+                transform: translateX(-100%);
             }
 
-            .header h1 {
-                font-size: 26px;
+            .sidebar.open {
+                transform: translateX(0);
             }
 
-            .input-footer {
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 99;
+            }
+
+            .sidebar-overlay.open {
+                display: block;
+            }
+
+            .btn-sidebar-toggle {
+                display: flex;
+            }
+
+            .messages-container {
+                padding: 16px 14px;
+            }
+
+            .input-bar-wrapper {
+                padding: 0 14px 14px;
+            }
+
+            .welcome-presets {
                 flex-direction: column;
-                gap: 10px;
-                align-items: stretch;
+                align-items: center;
             }
 
-            .btn-plan {
-                text-align: center;
+            .welcome-preset {
+                max-width: 100%;
+                width: 100%;
             }
+        }
+
+        /* ─── Scrollbar global ───────────────────── */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 4px;
+        }
+
+        /* ─── Human-in-the-Loop Interrupt Block ────── */
+        .interrupt-block {
+            padding: 16px 18px;
+            background: rgba(251, 191, 36, 0.06);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            animation: block-in 0.35s ease;
+        }
+
+        .interrupt-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .interrupt-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .interrupt-icon svg {
+            width: 18px;
+            height: 18px;
+            stroke: #0c0c0c;
+            fill: none;
+        }
+
+        .interrupt-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #fbbf24;
+        }
+
+        .interrupt-question {
+            font-size: 13.5px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 14px;
+            padding-left: 42px;
+        }
+
+        .interrupt-input-row {
+            display: flex;
+            gap: 8px;
+            padding-left: 42px;
+        }
+
+        .interrupt-input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(251, 191, 36, 0.25);
+            background: rgba(251, 191, 36, 0.04);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .interrupt-input:focus {
+            border-color: rgba(251, 191, 36, 0.5);
+        }
+
+        .interrupt-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .btn-interrupt-send {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.15s, transform 0.1s;
+            flex-shrink: 0;
+        }
+
+        .btn-interrupt-send:hover:not(:disabled) {
+            opacity: 0.88;
+            transform: translateY(-1px);
+        }
+
+        .btn-interrupt-send:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .btn-interrupt-send svg {
+            width: 16px;
+            height: 16px;
+            stroke: #0c0c0c;
+            fill: none;
+        }
+
+        .interrupt-block.answered {
+            opacity: 0.6;
+        }
+
+        .interrupt-block.answered .interrupt-input-row {
+            display: none;
+        }
+
+        .interrupt-answered-text {
+            font-size: 12px;
+            color: var(--text-muted);
+            padding-left: 42px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .interrupt-block.answered .interrupt-answered-text {
+            display: block;
         }
     </style>
 </head>
 
 <body>
 
-    <div class="container">
+    <!-- Mobile sidebar overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-        <!-- Header -->
-        <header class="header">
-            <div class="header-badge">
-                <span class="dot"></span>
-                Multi-Agent System
-            </div>
-            <h1>AI Travel Planner</h1>
-            <p>Specialised AI agents research, find flights, book hotels, and plan your budget in real time.</p>
-        </header>
-
-        <!-- Input Area -->
-        <section class="input-area" id="input-area">
-            <textarea id="trip-input"
-                placeholder="Describe your trip — e.g. Plan a 7-day trip from New York to Paris in mid-April with a mid-range budget…"></textarea>
-            <div class="input-footer">
-                <div class="presets">
-                    <button class="preset-chip" onclick="fillPreset('budget-tokyo')">Budget Tokyo</button>
-                    <button class="preset-chip" onclick="fillPreset('luxury-paris')">Luxury Paris</button>
-                    <button class="preset-chip" onclick="fillPreset('family-nyc')">Family NYC</button>
+    <!-- ─── Sidebar ──────────────────────────── -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-brand">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M2 12h20" />
+                        <path
+                            d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                    </svg>
                 </div>
-                <button class="btn-plan" id="btn-plan" onclick="planTrip()">
-                    Plan Trip
+                <div>
+                    <div class="brand-name">Travel Planner</div>
+                    <div class="brand-sub">Multi-Agent AI</div>
+                </div>
+            </div>
+            <button class="btn-new-chat" id="btn-new-chat" onclick="startNewChat()">
+                <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                New Chat
+            </button>
+        </div>
+        <div class="sidebar-chats" id="sidebar-chats">
+            <!-- Chat history items will be dynamically added here -->
+        </div>
+        <div class="sidebar-footer">
+            <span class="dot"></span>
+            Multi-Agent System Online
+        </div>
+    </aside>
+
+    <!-- ─── Main ─────────────────────────────── -->
+    <main class="main">
+
+        <!-- Top bar -->
+        <div class="topbar">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <button class="btn-sidebar-toggle" onclick="toggleSidebar()">
+                    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12" />
+                        <line x1="3" y1="6" x2="21" y2="6" />
+                        <line x1="3" y1="18" x2="21" y2="18" />
+                    </svg>
                 </button>
+                <div class="topbar-title">
+                    AI Travel Planner
+                    <span class="topbar-badge">Multi-Agent</span>
+                </div>
             </div>
-        </section>
-
-        <!-- Thinking Indicator -->
-        <div class="thinking-indicator" id="thinking-indicator" style="position:relative;">
-            <div class="thinking-orb"></div>
-            <div class="thinking-indicator-text">
-                Agents are thinking<span> — planning your trip...</span>
+            <div class="topbar-thread" id="topbar-thread" style="display:none;">
+                Thread: <code id="thread-id-display">—</code>
             </div>
-            <div class="thinking-indicator-shimmer"></div>
         </div>
 
-        <!-- Agent Pipeline (thinking blocks) -->
-        <section class="pipeline" id="pipeline"></section>
+        <!-- Chat messages area -->
+        <div class="chat-area" id="chat-area">
 
-        <!-- Thread Info -->
-        <div class="thread-info" id="thread-info">
-            Thread: <code id="thread-id-display">—</code>
+            <!-- Welcome Screen (shown when no messages) -->
+            <div class="welcome-screen" id="welcome-screen">
+                <div class="welcome-icon">
+                    <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M2 12h20" />
+                        <path
+                            d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                    </svg>
+                </div>
+                <h1>Where to next?</h1>
+                <p>Specialised AI agents research destinations, find flights, book hotels, and plan your budget — all in
+                    real time.</p>
+                <div class="welcome-presets">
+                    <button class="welcome-preset" onclick="sendPreset('budget-tokyo')">
+                        <span class="preset-icon">🗼</span>
+                        <div class="preset-title">Budget Tokyo Trip</div>
+                        <div class="preset-desc">5-day cheap adventure from London</div>
+                    </button>
+                    <button class="welcome-preset" onclick="sendPreset('luxury-paris')">
+                        <span class="preset-icon">🗼</span>
+                        <div class="preset-title">Luxury Paris Getaway</div>
+                        <div class="preset-desc">7-day first-class from Dubai</div>
+                    </button>
+                    <button class="welcome-preset" onclick="sendPreset('family-nyc')">
+                        <span class="preset-icon">🗽</span>
+                        <div class="preset-title">Family NYC Trip</div>
+                        <div class="preset-desc">6-day family of 4 from Chicago</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages container (hidden initially, shown when chat starts) -->
+            <div class="messages-container" id="messages-container" style="display:none;">
+            </div>
         </div>
 
-    </div>
+        <!-- Input Bar -->
+        <div class="input-bar-wrapper">
+            <div class="input-bar" id="input-bar">
+                <textarea id="chat-input" rows="1"
+                    placeholder="Plan a trip, ask follow-up questions, or refine your itinerary…"></textarea>
+                <div class="input-bar-footer">
+                    <span class="input-hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to send</span>
+                    <button class="btn-send" id="btn-send" onclick="sendMessage()">
+                        <svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13" />
+                            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
 
     <script>
         const API_BASE = 'http://localhost:8000';
 
         const AGENT_META = {
+            intake: {
+                label: 'Intake Check',
+                thinkingMsg: 'Validating your travel request',
+                doneMsg: 'Request validated — all details confirmed',
+            },
             research: {
                 label: 'Research Agent',
                 thinkingMsg: 'Searching destination info and weather data',
@@ -656,75 +1285,153 @@
             'family-nyc': 'We\'re a family of 4 planning a 6-day trip from Chicago to New York City in December. Find family-friendly flights, a hotel near Central Park, and estimate total costs.',
         };
 
-        const inputEl = document.getElementById('trip-input');
-        const btnPlan = document.getElementById('btn-plan');
-        const pipelineEl = document.getElementById('pipeline');
-        const threadInfoEl = document.getElementById('thread-info');
-        const threadIdEl = document.getElementById('thread-id-display');
-        const thinkingIndEl = document.getElementById('thinking-indicator');
+        // ─── State ──────────────────────────────────
+        let currentThreadId = null;
+        let isProcessing = false;
+        let chatHistory = []; // [{id, title, threadId}]
+        let pendingInterrupt = null; // {responseArea, createdBlocks, msgId}
 
-        function fillPreset(key) {
-            inputEl.value = PRESETS[key] || '';
-            inputEl.focus();
+        // ─── DOM ────────────────────────────────────
+        const chatArea = document.getElementById('chat-area');
+        const messagesContainer = document.getElementById('messages-container');
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const chatInput = document.getElementById('chat-input');
+        const btnSend = document.getElementById('btn-send');
+        const topbarThread = document.getElementById('topbar-thread');
+        const threadIdDisplay = document.getElementById('thread-id-display');
+        const sidebarChats = document.getElementById('sidebar-chats');
+
+        // ─── Sidebar Toggle (mobile) ────────────────
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebar-overlay').classList.toggle('open');
         }
 
-        // ── Build a thinking block ──────────────────
+        // ─── Start New Chat ─────────────────────────
+        function startNewChat() {
+            currentThreadId = null;
+            messagesContainer.innerHTML = '';
+            messagesContainer.style.display = 'none';
+            welcomeScreen.classList.remove('hidden');
+            topbarThread.style.display = 'none';
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+            chatInput.focus();
+            updateSidebarActive();
+
+            // Close mobile sidebar
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebar-overlay').classList.remove('open');
+        }
+
+        // ─── Send Preset ────────────────────────────
+        function sendPreset(key) {
+            chatInput.value = PRESETS[key] || '';
+            sendMessage();
+        }
+
+        // ─── Add User Message to Chat ───────────────
+        function addUserMessage(text) {
+            welcomeScreen.classList.add('hidden');
+            messagesContainer.style.display = 'block';
+
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message';
+            msgDiv.innerHTML = `
+                <div class="message-avatar user">
+                    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </div>
+                <div class="message-body">
+                    <div class="message-sender">You <span class="msg-time">${timeStr}</span></div>
+                    <div class="message-text"><p>${escapeHtml(text)}</p></div>
+                </div>
+            `;
+            messagesContainer.appendChild(msgDiv);
+            scrollToBottom();
+        }
+
+        // ─── Create AI Message Container ────────────
+        function createAIMessage() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message';
+            msgDiv.innerHTML = `
+                <div class="message-avatar ai">
+                    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M2 12h20"/>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                    </svg>
+                </div>
+                <div class="message-body">
+                    <div class="message-sender">Travel Planner <span class="msg-time">${timeStr}</span></div>
+                    <div class="ai-response-area" id="current-response"></div>
+                </div>
+            `;
+            messagesContainer.appendChild(msgDiv);
+            return msgDiv.querySelector('#current-response');
+        }
+
+        // ─── Build Thinking Block ───────────────────
         function createThinkingBlock(nodeName) {
             const meta = AGENT_META[nodeName] || { label: nodeName, thinkingMsg: 'Working', doneMsg: 'Done' };
-
             const block = document.createElement('div');
             block.className = 'thinking-block active expanded';
             block.id = `block-${nodeName}`;
             block.innerHTML = `
-            <button class="thinking-toggle" onclick="toggleBlock('${nodeName}')">
-                <div class="toggle-icon">
-                    <svg class="toggle-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="9 18 15 12 9 6"/>
-                    </svg>
+                <button class="thinking-toggle" onclick="toggleBlock('${nodeName}')">
+                    <div class="toggle-icon">
+                        <svg class="toggle-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                    </div>
+                    <span class="toggle-label" id="label-${nodeName}">${meta.label}</span>
+                    <span class="toggle-status working" id="status-${nodeName}">
+                        <span class="thinking-dots"><span></span><span></span><span></span></span>
+                    </span>
+                </button>
+                <div class="shimmer-bar" id="shimmer-${nodeName}"></div>
+                <div class="thinking-body">
+                    <div class="thinking-content" id="content-${nodeName}">
+                        <span class="step-text">${meta.thinkingMsg}…</span>
+                    </div>
                 </div>
-                <span class="toggle-label" id="label-${nodeName}">${meta.label}</span>
-                <span class="toggle-status working" id="status-${nodeName}">
-                    <span class="thinking-dots"><span></span><span></span><span></span></span>
-                </span>
-            </button>
-            <div class="shimmer-bar" id="shimmer-${nodeName}"></div>
-            <div class="thinking-body">
-                <div class="thinking-content" id="content-${nodeName}">
-                    <span class="step-text">${meta.thinkingMsg}…</span>
-                </div>
-            </div>
-        `;
+            `;
             return block;
         }
 
-        // ── Complete a thinking block ────────────────
-        function completeBlock(nodeName, fullContent) {
+        // ─── Complete Thinking Block ────────────────
+        function completeBlock(nodeName, fullContent, responseArea) {
             const meta = AGENT_META[nodeName] || { doneMsg: 'Done' };
             const block = document.getElementById(`block-${nodeName}`);
             if (!block) return;
 
-            // Switch state
             block.classList.remove('active');
             block.classList.add('done');
 
-            // Collapse (except summary)
             if (nodeName !== 'summarize') {
                 block.classList.remove('expanded');
             }
 
-            // Update status badge
             const statusEl = document.getElementById(`status-${nodeName}`);
             if (statusEl) {
                 statusEl.className = 'toggle-status done';
                 statusEl.innerHTML = `
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                     stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="20 6 9 17 4 12"/>
-                </svg>
-            `;
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                `;
             }
 
-            // Update label to include done message
             const labelEl = document.getElementById(`label-${nodeName}`);
             if (labelEl) {
                 if (nodeName === 'summarize') {
@@ -734,44 +1441,40 @@
                 }
             }
 
-            // Update body content
             const contentEl = document.getElementById(`content-${nodeName}`);
             if (!contentEl) return;
 
             if (nodeName === 'summarize') {
-                // Summary shows full formatted output below the block
+                // Add formatted summary below all thinking blocks
                 const summaryDiv = document.createElement('div');
-                summaryDiv.className = 'summary-block';
-                summaryDiv.innerHTML = `<div class="summary-content">${formatContent(fullContent)}</div>`;
-                block.parentNode.insertBefore(summaryDiv, block.nextSibling);
-                // Also put short text inside the collapsible body
+                summaryDiv.className = 'summary-content';
+                summaryDiv.innerHTML = formatContent(fullContent);
+                responseArea.appendChild(summaryDiv);
                 contentEl.innerHTML = '<span class="step-text">Compiled the final travel plan from all agents.</span>';
             } else {
                 contentEl.innerHTML = `<span class="step-text">${meta.doneMsg}.</span>`;
             }
+
+            scrollToBottom();
         }
 
-        // ── Toggle collapse/expand ──────────────────
+        // ─── Toggle Block ───────────────────────────
         function toggleBlock(nodeName) {
             const block = document.getElementById(`block-${nodeName}`);
             if (block) block.classList.toggle('expanded');
         }
 
-        // ── Format content (markdown → HTML) ────────
+        // ─── Format Content (Markdown → HTML) ───────
         function formatContent(raw) {
             if (!raw) return '<p>No content received.</p>';
 
             let text = escapeHtml(raw);
-
             text = text.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
             text = text.replace(/^###\s+(.+)$/gm, '<h4>$1</h4>');
             text = text.replace(/^##\s+(.+)$/gm, '<h3>$1</h3>');
-
             text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
             text = text.replace(/^- (.+)$/gm, '<li>$1</li>');
             text = text.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
-
             text = text
                 .split(/\n{2,}/)
                 .map(block => {
@@ -781,7 +1484,6 @@
                     return `<p>${block.replace(/\n/g, '<br>')}</p>`;
                 })
                 .join('');
-
             return text;
         }
 
@@ -791,24 +1493,109 @@
             return d.innerHTML;
         }
 
-        // ── Main: Plan Trip ─────────────────────────
-        async function planTrip() {
-            const message = inputEl.value.trim();
-            if (!message) { inputEl.focus(); return; }
+        // ─── Scroll to Bottom ───────────────────────
+        function scrollToBottom() {
+            requestAnimationFrame(() => {
+                chatArea.scrollTop = chatArea.scrollHeight;
+            });
+        }
 
-            // Reset
-            pipelineEl.innerHTML = '';
-            pipelineEl.classList.add('active');
-            threadInfoEl.classList.remove('visible');
-            thinkingIndEl.classList.add('visible');
+        // ─── Add to Chat History Sidebar ────────────
+        function addToChatHistory(threadId, title) {
+            // Check if this thread already exists
+            const existing = chatHistory.find(c => c.threadId === threadId);
+            if (existing) {
+                updateSidebarActive();
+                return;
+            }
+
+            const entry = {
+                id: Date.now(),
+                threadId,
+                title: title.substring(0, 50) + (title.length > 50 ? '…' : ''),
+            };
+            chatHistory.unshift(entry);
+            renderChatHistory();
+        }
+
+        function renderChatHistory() {
+            sidebarChats.innerHTML = '';
+            chatHistory.forEach(chat => {
+                const item = document.createElement('div');
+                item.className = 'chat-history-item' + (chat.threadId === currentThreadId ? ' active' : '');
+                item.onclick = () => loadChat(chat.threadId);
+                item.innerHTML = `
+                    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <span class="chat-item-text">${escapeHtml(chat.title)}</span>
+                `;
+                sidebarChats.appendChild(item);
+            });
+        }
+
+        function updateSidebarActive() {
+            document.querySelectorAll('.chat-history-item').forEach((item, i) => {
+                if (chatHistory[i]?.threadId === currentThreadId) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+
+        function loadChat(threadId) {
+            // For now, we just re-select visually. Full history loading could be added.
+            currentThreadId = threadId;
+            updateSidebarActive();
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebar-overlay').classList.remove('open');
+        }
+
+        // ─── Send Message ───────────────────────────
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message || isProcessing) return;
+
+            isProcessing = true;
+            btnSend.disabled = true;
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+
+            // Add user message bubble
+            addUserMessage(message);
+
+            // Create AI response container
+            const responseArea = createAIMessage();
+
+            // Add thinking indicator inside AI response
+            const thinkingInd = document.createElement('div');
+            thinkingInd.className = 'thinking-indicator visible';
+            thinkingInd.id = 'thinking-indicator-live';
+            thinkingInd.innerHTML = `
+                <div class="thinking-orb"></div>
+                <div class="thinking-indicator-text">
+                    Agents are thinking<span> — planning your trip...</span>
+                </div>
+                <div class="thinking-indicator-shimmer"></div>
+            `;
+            responseArea.appendChild(thinkingInd);
+            scrollToBottom();
 
             const createdBlocks = new Set();
+            // Keep a unique suffix to avoid ID collisions across messages
+            const msgId = Date.now();
 
             try {
+                const body = { message };
+                if (currentThreadId) {
+                    body.thread_id = currentThreadId;
+                }
+
                 const response = await fetch(`${API_BASE}/plan/stream`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message }),
+                    body: JSON.stringify(body),
                 });
 
                 if (!response.ok) throw new Error(`Server error ${response.status}`);
@@ -830,76 +1617,314 @@
                         const jsonStr = line.slice(6).trim();
                         if (!jsonStr) continue;
                         try {
-                            handleEvent(JSON.parse(jsonStr), createdBlocks);
+                            handleEvent(JSON.parse(jsonStr), createdBlocks, responseArea, msgId, message);
                         } catch { }
                     }
                 }
 
                 if (buffer.startsWith('data: ')) {
-                    try { handleEvent(JSON.parse(buffer.slice(6).trim()), createdBlocks); } catch { }
+                    try { handleEvent(JSON.parse(buffer.slice(6).trim()), createdBlocks, responseArea, msgId, message); } catch { }
                 }
 
             } catch (err) {
                 const errDiv = document.createElement('div');
-                errDiv.className = 'thinking-block';
+                errDiv.className = 'error-block';
                 errDiv.innerHTML = `
-                <div class="thinking-toggle" style="border-color:rgba(251,113,133,0.2); cursor:default;">
-                    <div class="toggle-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--rose)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                    </div>
-                    <span class="toggle-label" style="color:var(--rose);">Error — ${escapeHtml(err.message)}</span>
-                </div>
-            `;
-                pipelineEl.appendChild(errDiv);
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--rose)" stroke-width="2.5">
+                        <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                    <span>Error — ${escapeHtml(err.message)}</span>
+                `;
+                responseArea.appendChild(errDiv);
             } finally {
-                thinkingIndEl.classList.remove('visible');
+                // Remove thinking indicator
+                const liveInd = document.getElementById('thinking-indicator-live');
+                if (liveInd) liveInd.remove();
+
+                isProcessing = false;
+                btnSend.disabled = false;
+                chatInput.focus();
+                scrollToBottom();
             }
         }
 
-        // ── Handle SSE event ────────────────────────
-        function handleEvent(event, createdBlocks) {
+        // ─── Handle SSE Event ───────────────────────
+        function handleEvent(event, createdBlocks, responseArea, msgId, message) {
             switch (event.event) {
                 case 'start':
-                    threadIdEl.textContent = event.thread_id;
-                    threadInfoEl.classList.add('visible');
+                    currentThreadId = event.thread_id;
+                    threadIdDisplay.textContent = event.thread_id;
+                    topbarThread.style.display = 'flex';
+                    addToChatHistory(event.thread_id, message);
+
+                    // Hide the standalone thinking indicator once first block comes
                     break;
 
                 case 'node_complete': {
                     const node = event.node;
+                    // Use unique IDs per message to avoid collisions
+                    const blockId = `${node}-${msgId}`;
+
                     if (!createdBlocks.has(node)) {
-                        pipelineEl.appendChild(createThinkingBlock(node));
-                        // Keep indicator at the bottom, below all blocks
-                        pipelineEl.appendChild(thinkingIndEl);
+                        // Hide thinking indicator once first block appears
+                        const liveInd = document.getElementById('thinking-indicator-live');
+                        if (liveInd) liveInd.style.display = 'none';
+
+                        const block = createThinkingBlock(node);
+                        // Override IDs with unique ones
+                        block.id = `block-${blockId}`;
+                        block.querySelector('.toggle-label').id = `label-${blockId}`;
+                        block.querySelector('.toggle-status').id = `status-${blockId}`;
+                        block.querySelector('.thinking-content').id = `content-${blockId}`;
+                        block.querySelector('.shimmer-bar').id = `shimmer-${blockId}`;
+                        // Fix onclick to use unique ID
+                        block.querySelector('.thinking-toggle').setAttribute('onclick', `toggleBlockById('block-${blockId}')`);
+
+                        responseArea.appendChild(block);
                         createdBlocks.add(node);
+                        scrollToBottom();
                     }
+
                     setTimeout(() => {
-                        completeBlock(node, event.content || '');
+                        completeBlockById(blockId, event.content || '', responseArea, node);
                     }, 500);
                     break;
                 }
 
+                case 'interrupt': {
+                    // Human-in-the-loop: agent is asking for input
+                    const liveInd = document.getElementById('thinking-indicator-live');
+                    if (liveInd) liveInd.remove();
+
+                    const interruptBlock = createInterruptBlock(event.question, event.node);
+                    responseArea.appendChild(interruptBlock);
+
+                    // Save context so resumeFromInterrupt can continue
+                    pendingInterrupt = { responseArea, createdBlocks, msgId };
+
+                    // Re-enable input (user needs to respond via the interrupt block)
+                    isProcessing = false;
+                    btnSend.disabled = false;
+                    scrollToBottom();
+
+                    // Focus the interrupt input
+                    const iInput = interruptBlock.querySelector('.interrupt-input');
+                    if (iInput) setTimeout(() => iInput.focus(), 100);
+                    break;
+                }
+
+                case 'resumed':
+                    // Graph resumed, continue receiving node events
+                    break;
+
                 case 'done':
-                    thinkingIndEl.classList.remove('visible');
+                    pendingInterrupt = null;
                     break;
 
                 case 'error':
+                    pendingInterrupt = null;
                     break;
             }
         }
 
-        // ── Ctrl+Enter shortcut ─────────────────────
-        inputEl.addEventListener('keydown', (e) => {
+        // ─── Block operations with unique IDs ───────
+        function toggleBlockById(blockId) {
+            const block = document.getElementById(blockId);
+            if (block) block.classList.toggle('expanded');
+        }
+
+        function completeBlockById(blockId, fullContent, responseArea, nodeName) {
+            const meta = AGENT_META[nodeName] || { doneMsg: 'Done', label: nodeName };
+            const block = document.getElementById(`block-${blockId}`);
+            if (!block) return;
+
+            block.classList.remove('active');
+            block.classList.add('done');
+
+            if (nodeName !== 'summarize') {
+                block.classList.remove('expanded');
+            }
+
+            const statusEl = document.getElementById(`status-${blockId}`);
+            if (statusEl) {
+                statusEl.className = 'toggle-status done';
+                statusEl.innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                `;
+            }
+
+            const labelEl = document.getElementById(`label-${blockId}`);
+            if (labelEl) {
+                if (nodeName === 'summarize') {
+                    labelEl.textContent = meta.label;
+                } else {
+                    labelEl.innerHTML = `${meta.label} <span style="color:var(--text-muted); font-weight:400; margin-left:6px;">— ${meta.doneMsg}</span>`;
+                }
+            }
+
+            const contentEl = document.getElementById(`content-${blockId}`);
+            if (!contentEl) return;
+
+            if (nodeName === 'summarize') {
+                const summaryDiv = document.createElement('div');
+                summaryDiv.className = 'summary-content';
+                summaryDiv.innerHTML = formatContent(fullContent);
+                responseArea.appendChild(summaryDiv);
+                contentEl.innerHTML = '<span class="step-text">Compiled the final travel plan from all agents.</span>';
+            } else {
+                contentEl.innerHTML = `<span class="step-text">${meta.doneMsg}.</span>`;
+            }
+
+            scrollToBottom();
+        }
+
+        // ─── Create Interrupt Block (HITL) ──────────
+        function createInterruptBlock(question, nodeName) {
+            const meta = AGENT_META[nodeName] || { label: nodeName };
+            const blockDiv = document.createElement('div');
+            blockDiv.className = 'interrupt-block';
+            blockDiv.id = 'interrupt-active';
+            blockDiv.innerHTML = `
+                <div class="interrupt-header">
+                    <div class="interrupt-icon">
+                        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                    </div>
+                    <span class="interrupt-label">${escapeHtml(meta.label)} needs your input</span>
+                </div>
+                <div class="interrupt-question">${escapeHtml(question)}</div>
+                <div class="interrupt-input-row">
+                    <input type="text" class="interrupt-input" placeholder="Type your response…"
+                           onkeydown="if(event.key==='Enter'){event.preventDefault();resumeFromInterrupt(this);}"/>
+                    <button class="btn-interrupt-send" onclick="resumeFromInterrupt(this.previousElementSibling)">
+                        <svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"/>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="interrupt-answered-text">✓ Response sent — continuing…</div>
+            `;
+            return blockDiv;
+        }
+
+        // ─── Resume from Interrupt ──────────────────
+        async function resumeFromInterrupt(inputEl) {
+            const userResponse = inputEl.value.trim();
+            if (!userResponse || !currentThreadId || !pendingInterrupt) return;
+
+            const { responseArea, createdBlocks, msgId } = pendingInterrupt;
+
+            // Mark the interrupt block as answered
+            const interruptBlock = document.getElementById('interrupt-active');
+            if (interruptBlock) {
+                interruptBlock.classList.add('answered');
+                interruptBlock.id = ''; // clear ID
+            }
+
+            isProcessing = true;
+            btnSend.disabled = true;
+
+            // Add a thinking indicator while graph resumes
+            const thinkingInd = document.createElement('div');
+            thinkingInd.className = 'thinking-indicator visible';
+            thinkingInd.id = 'thinking-indicator-live';
+            thinkingInd.innerHTML = `
+                <div class="thinking-orb"></div>
+                <div class="thinking-indicator-text">
+                    Agents resumed<span> — continuing with your input...</span>
+                </div>
+                <div class="thinking-indicator-shimmer"></div>
+            `;
+            responseArea.appendChild(thinkingInd);
+            scrollToBottom();
+
+            try {
+                const response = await fetch(`${API_BASE}/plan/resume`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        thread_id: currentThreadId,
+                        user_response: userResponse,
+                    }),
+                });
+
+                if (!response.ok) throw new Error(`Server error ${response.status}`);
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        const jsonStr = line.slice(6).trim();
+                        if (!jsonStr) continue;
+                        try {
+                            handleEvent(JSON.parse(jsonStr), createdBlocks, responseArea, msgId, userResponse);
+                        } catch { }
+                    }
+                }
+
+                if (buffer.startsWith('data: ')) {
+                    try { handleEvent(JSON.parse(buffer.slice(6).trim()), createdBlocks, responseArea, msgId, userResponse); } catch { }
+                }
+
+            } catch (err) {
+                const errDiv = document.createElement('div');
+                errDiv.className = 'error-block';
+                errDiv.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--rose)" stroke-width="2.5">
+                        <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                    <span>Error resuming — ${escapeHtml(err.message)}</span>
+                `;
+                responseArea.appendChild(errDiv);
+            } finally {
+                const liveInd = document.getElementById('thinking-indicator-live');
+                if (liveInd) liveInd.remove();
+
+                isProcessing = false;
+                btnSend.disabled = false;
+                chatInput.focus();
+                scrollToBottom();
+            }
+        }
+
+        // ─── Keyboard Shortcuts ─────────────────────
+        chatInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
-                planTrip();
+                sendMessage();
+            }
+            // Also send on plain Enter (no shift) for single-line feel
+            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                sendMessage();
             }
         });
 
-        // ── Auto resize textarea ────────────────────
-        inputEl.addEventListener('input', () => {
-            inputEl.style.height = 'auto';
-            inputEl.style.height = inputEl.scrollHeight + 'px';
+        // ─── Auto Resize Textarea ───────────────────
+        chatInput.addEventListener('input', () => {
+            chatInput.style.height = 'auto';
+            chatInput.style.height = Math.min(chatInput.scrollHeight, 160) + 'px';
         });
+
+        // ─── Focus on load ──────────────────────────
+        chatInput.focus();
     </script>
 
 </body>
